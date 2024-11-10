@@ -2,6 +2,7 @@ import {
   View,
   Text,
   TextInput,
+  Button,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -16,6 +17,7 @@ import {
   GoogleSignin,
   GoogleSigninButton,
 } from "@react-native-google-signin/google-signin";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface FormDataProps {
   userName: string;
@@ -31,7 +33,7 @@ interface ErrorProps {
   authMethod?: string;
 }
 
-const LoginScreen = () => {
+const RegisterScreen = () => {
   const [formData, setFormData] = useState<FormDataProps>({
     userName: "",
     email: "",
@@ -40,12 +42,12 @@ const LoginScreen = () => {
   });
   const [errorMsg, setErrorMsg] = useState<ErrorProps>({});
   const [showPassword, setShowPassword] = useState(false);
-  const { onLogin, isLoading } = useAuth();
+  const { onRegister, isLoading } = useAuth();
 
   const router = useRouter();
 
-  if (!onLogin) {
-    console.error("onLogin no está definido en el contexto.");
+  if (!onRegister) {
+    console.error("onRegister no está definido en el contexto.");
   }
 
   function handleInput(name: keyof FormDataProps, value: string) {
@@ -73,49 +75,47 @@ const LoginScreen = () => {
     return isValid;
   }
 
+  async function register() {
+    if (validateInputs()) {
+      const res = await onRegister!(
+        formData.userName,
+        formData.email,
+        formData.authMethod === "google" ? null : formData.password,
+        formData.authMethod
+      );
+      if (res && res.error) {
+        alert(res.msg);
+      }
+    }
+  }
+
   async function googleSignIn() {
     console.log("pressed sign in");
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      const { email } = userInfo.data?.user || {};
+      const { email, name } = userInfo.data?.user || {};
 
-      if (!email) {
+      if (!email || !name) {
         console.error("No se encontró un email en la respuesta de Google");
-        googleLogout();
         return;
       }
 
-      if (onLogin) {
-        const res = await onLogin(email, null, "google");
+      if (onRegister) {
+        const res = await onRegister(name, email, null, "google");
         if (res && res.error) {
           alert(res.msg);
           googleLogout();
-        } else {
-          router.replace("/");
+        } else if (res && res.userId) {
+          googleLogout();
+          router.replace({
+            pathname: "/verify2FA",
+            params: { userId: res.userId },
+          });
         }
       }
     } catch (error) {
       console.error(error);
-      googleLogout();
-    }
-  }
-
-  async function login() {
-    if (validateInputs()) {
-      if (formData.authMethod === "google") {
-        await googleSignIn();
-      } else {
-        const res = await onLogin!(
-          formData.email,
-          formData.password,
-          formData.authMethod
-        );
-        router.replace("/");
-        if (res && res.error) {
-          alert(res.msg);
-        }
-      }
     }
   }
 
@@ -141,15 +141,32 @@ const LoginScreen = () => {
     >
       <View style={styles.overlay}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>
-            World Champi
-            <FontAwesome6 name="crown" size={30} color="#FFD700" />
-            ns
-          </Text>
+          <Text style={styles.logoText}>Crea tu cuenta</Text>
+        </View>
+
+        <View style={styles.googleLogin}>
+          <GoogleSigninButton
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Light}
+            onPress={() => {
+              setFormData((prev) => ({ ...prev, authMethod: "google" }));
+              googleSignIn();
+            }}
+          />
+        </View>
+
+        <View style={styles.lineContent}>
+          <View style={styles.line} />
+          <View>
+            <Text style={styles.lineText}>O</Text>
+          </View>
+          <View style={styles.line} />
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.labelInput}>Correo</Text>
+          <Text style={styles.labelInput}>
+            Correo {""} <Text style={{ color: "yellow" }}>*</Text>
+          </Text>
           <TextInput
             style={styles.input}
             placeholder="hola@ejemplo.com"
@@ -164,7 +181,9 @@ const LoginScreen = () => {
             <Text style={styles.errorText}>{errorMsg.email}</Text>
           ) : null}
 
-          <Text style={styles.labelInput}>Contraseña</Text>
+          <Text style={styles.labelInput}>
+            Contraseña{""} <Text style={{ color: "yellow" }}>*</Text>
+          </Text>
           <View style={styles.passwordContainer}>
             <TextInput
               style={[styles.input, styles.passwordInput]}
@@ -194,50 +213,27 @@ const LoginScreen = () => {
           ) : null}
         </View>
 
-        <TouchableOpacity accessibilityLabel="¿Olvidaste tu contraseña?">
-          <Text style={styles.forgotPassword}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.button, isLoading && styles.disabledButton]}
           onPress={() => {
             setFormData((prev) => ({ ...prev, authMethod: "local" }));
-            login();
+            register();
           }}
           disabled={isLoading}
-          accessibilityLabel="Iniciar Sesión"
+          accessibilityLabel="Crear"
         >
           {isLoading ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <Text style={styles.buttonText}>Iniciar Sesión</Text>
+            <Text style={styles.buttonText}>Crear</Text>
           )}
         </TouchableOpacity>
 
-        <View style={styles.lineContent}>
-          <View style={styles.line} />
-          <View>
-            <Text style={styles.lineText}>O</Text>
-          </View>
-          <View style={styles.line} />
-        </View>
-
-        <View style={styles.googleLogin}>
-          <GoogleSigninButton
-            size={GoogleSigninButton.Size.Wide}
-            color={GoogleSigninButton.Color.Light}
-            onPress={() => {
-              setFormData((prev) => ({ ...prev, authMethod: "google" }));
-              googleSignIn();
-            }}
-          />
-        </View>
-
         <View style={{ alignSelf: "center", marginTop: 20 }}>
           <Text style={{ color: "white" }}>
-            No tienes una cuenta {""}
-            <Link href={"/sign-up"}>
-              <Text style={{ color: "yellow" }}>Registrate</Text>
+            Ya tienes una cuenta {""}
+            <Link href={"/sign-in"}>
+              <Text style={{ color: "yellow" }}>Iniciar sesión</Text>
             </Link>
           </Text>
         </View>
@@ -338,4 +334,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default RegisterScreen;

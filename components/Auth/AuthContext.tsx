@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { register, verify2FA, login } from "@/api/endpoints";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AuthProps {
   authState?: { token: string | null; authenticated?: boolean | null };
@@ -9,10 +10,15 @@ interface AuthProps {
   onRegister?: (
     userName: string,
     email: string,
-    password: string
+    password: string | null,
+    authMethod: string
   ) => Promise<any>;
   onVerify2FA?: (userId: number, code: string) => Promise<any>;
-  onLogin?: (email: string, password: string) => Promise<any>;
+  onLogin?: (
+    email: string,
+    password: string | null,
+    authMethod: string
+  ) => Promise<any>;
   onLogout?: () => Promise<any>;
 }
 
@@ -33,7 +39,7 @@ export const AuthProvider = ({ children }: any) => {
   useEffect(() => {
     const loadToken = async () => {
       const token = await SecureStore.getItemAsync("TOKEN_KEY");
-      console.log("stored token: ", token);
+      console.log("token", token);
 
       if (token) {
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -56,13 +62,17 @@ export const AuthProvider = ({ children }: any) => {
   const handleRegister = async (
     userName: string,
     email: string,
-    password: string
+    password: string | null,
+    authMethod: string
   ) => {
     setIsLoading(true);
     try {
-      return await register({ userName, email, password });
+      const res = await register({ userName, email, password, authMethod });
+      console.log("user id creado", res.data.id);
+
+      return { userId: res.data.id };
     } catch (error) {
-      return { error: true, msg: (error as any).response.data.mesg };
+      return { error: true, msg: (error as any).response.data.message };
     } finally {
       setIsLoading(false);
     }
@@ -73,16 +83,20 @@ export const AuthProvider = ({ children }: any) => {
     try {
       return await verify2FA({ userId, code });
     } catch (error) {
-      return { error: true, msg: (error as any).response.data.mesg };
+      return { error: true, msg: (error as any).response.data.message };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (
+    email: string,
+    password: string | null,
+    authMethod: string
+  ) => {
     setIsLoading(true);
     try {
-      const res = await login({ email, password });
+      const res = await login({ email, password, authMethod });
       if (!res || !res.data) {
         throw new Error("No se recibió una respuesta válida del servidor.");
       }
