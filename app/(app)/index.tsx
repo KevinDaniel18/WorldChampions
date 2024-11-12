@@ -1,6 +1,5 @@
-import { Text, View } from "react-native";
-
-import { useAuth } from "@/components/Auth/AuthContext";
+import { Text, View, BackHandler, Alert } from "react-native";
+import { useAuth } from "@/hooks/Auth/AuthContext";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useEffect } from "react";
 
@@ -21,6 +20,30 @@ export default function Index() {
 
   useEffect(() => {
     configureGoogleSignIn();
+
+    const backAction = () => {
+      Alert.alert("Confirm", "Are you sure you want to exit?", [
+        {
+          text: "Cancel",
+          onPress: () => null,
+          style: "cancel",
+        },
+        {
+          text: "OK",
+          onPress: () => {
+            logout();
+            BackHandler.exitApp();
+          },
+        },
+      ]);
+      return true;
+    };
+
+    BackHandler.addEventListener("hardwareBackPress", backAction);
+
+    return () => {
+      BackHandler.removeEventListener("hardwareBackPress", backAction);
+    };
   }, []);
 
   return (

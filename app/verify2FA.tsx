@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Link, useRouter, useLocalSearchParams } from "expo-router";
-import { useAuth } from "@/components/Auth/AuthContext";
+import { useAuth } from "@/hooks/Auth/AuthContext";
 
 interface FormDataProps {
   code: string;

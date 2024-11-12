@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/Auth/AuthContext";
+import { useAuth } from "@/hooks/Auth/AuthContext";
 import { Redirect, Stack } from "expo-router";
 import { Text } from "react-native";
 

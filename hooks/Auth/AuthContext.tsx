@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { register, verify2FA, login } from "@/api/endpoints";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -71,8 +71,15 @@ export const AuthProvider = ({ children }: any) => {
       console.log("user id creado", res.data.id);
 
       return { userId: res.data.id };
-    } catch (error) {
-      return { error: true, msg: (error as any).response.data.message };
+    } catch (error: any) {
+      if (new axios.AxiosError(error) && error.response) {
+        return {
+          error: true,
+          msg: error.response.data.message,
+          userId: error.response.data.userId,
+          statusCode: error.response.status,
+        };
+      }
     } finally {
       setIsLoading(false);
     }
@@ -108,11 +115,21 @@ export const AuthProvider = ({ children }: any) => {
       ] = `Bearer ${res.data.accessToken}`;
 
       await SecureStore.setItemAsync("TOKEN_KEY", accessToken);
-      return res.data;
-    } catch (error) {
-      console.log(error);
+      console.log(res.data.id);
 
-      return { error: true, msg: (error as any).response.data.message };
+      return res.data;
+    } catch (error: any) {
+      if (new axios.AxiosError(error) && error.response) {
+        return {
+          error: true,
+          msg: error.response.data.message,
+          userId: error.response.data.userId,
+          statusCode: error.response.status,
+        };
+      } else {
+        console.log(error);
+        return { error: true, msg: "Ocurrió un error desconocido" };
+      }
     } finally {
       setIsLoading(false);
     }

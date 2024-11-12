@@ -8,131 +8,30 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/components/Auth/AuthContext";
-import { Link, useRouter } from "expo-router";
+import React from "react";
+import { useRouter } from "expo-router";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import {
-  GoogleSignin,
-  GoogleSigninButton,
-} from "@react-native-google-signin/google-signin";
-
-interface FormDataProps {
-  userName: string;
-  email: string;
-  password: string;
-  authMethod: string;
-}
-
-interface ErrorProps {
-  userName?: string;
-  email?: string;
-  password?: string;
-  authMethod?: string;
-}
+import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
+import { useLoginForm } from "@/hooks/Form/useLoginForm";
 
 const LoginScreen = () => {
-  const [formData, setFormData] = useState<FormDataProps>({
-    userName: "",
-    email: "",
-    password: "",
-    authMethod: "local",
-  });
-  const [errorMsg, setErrorMsg] = useState<ErrorProps>({});
-  const [showPassword, setShowPassword] = useState(false);
-  const { onLogin, isLoading } = useAuth();
+  const {
+    formData,
+    setFormData,
+    showPassword,
+    setShowPassword,
+    errorMsg,
+    isLoading,
+    handleInput,
+    login,
+    googleSignIn,
+  } = useLoginForm();
 
   const router = useRouter();
 
-  if (!onLogin) {
-    console.error("onLogin no está definido en el contexto.");
-  }
-
-  function handleInput(name: keyof FormDataProps, value: string) {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errorMsg[name]) {
-      setErrorMsg((prev) => ({ ...prev, [name]: "" }));
-    }
-  }
-
-  function validateInputs() {
-    let isValid = true;
-    const errors: ErrorProps = {};
-
-    if (formData.email.trim() === "") {
-      errors.email = "El correo electrónico es requerido";
-      isValid = false;
-    }
-
-    if (formData.password.trim() === "" && formData.authMethod === "local") {
-      errors.password = "La contraseña es requerida";
-      isValid = false;
-    }
-
-    setErrorMsg(errors);
-    return isValid;
-  }
-
-  async function googleSignIn() {
-    console.log("pressed sign in");
-    try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      const { email } = userInfo.data?.user || {};
-
-      if (!email) {
-        console.error("No se encontró un email en la respuesta de Google");
-        googleLogout();
-        return;
-      }
-
-      if (onLogin) {
-        const res = await onLogin(email, null, "google");
-        if (res && res.error) {
-          alert(res.msg);
-          googleLogout();
-        } else {
-          router.replace("/");
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      googleLogout();
-    }
-  }
-
-  async function login() {
-    if (validateInputs()) {
-      if (formData.authMethod === "google") {
-        await googleSignIn();
-      } else {
-        const res = await onLogin!(
-          formData.email,
-          formData.password,
-          formData.authMethod
-        );
-        router.replace("/");
-        if (res && res.error) {
-          alert(res.msg);
-        }
-      }
-    }
-  }
-
-  function configureGoogleSignIn() {
-    GoogleSignin.configure({
-      webClientId: process.env.EXPO_ANDROID_CLIENT_ID,
-    });
-  }
-
-  useEffect(() => {
-    configureGoogleSignIn();
-  }, []);
-
-  function googleLogout() {
-    GoogleSignin.revokeAccess();
-    GoogleSignin.signOut();
-  }
+  const navigateToSignUp = () => {
+    router.navigate("/sign-up");
+  };
 
   return (
     <KeyboardAvoidingView
@@ -236,9 +135,9 @@ const LoginScreen = () => {
         <View style={{ alignSelf: "center", marginTop: 20 }}>
           <Text style={{ color: "white" }}>
             No tienes una cuenta {""}
-            <Link href={"/sign-up"}>
-              <Text style={{ color: "yellow" }}>Registrate</Text>
-            </Link>
+            <Text onPress={navigateToSignUp} style={{ color: "yellow" }}>
+              Registrate
+            </Text>
           </Text>
         </View>
       </View>

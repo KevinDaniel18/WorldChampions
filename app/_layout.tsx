@@ -1,10 +1,10 @@
 import { Slot } from "expo-router";
-import { AuthProvider } from "@/components/Auth/AuthContext";
+import { AuthProvider } from "@/hooks/Auth/AuthContext";
 
 export default function Layout() {
   return (
     <AuthProvider>
-      <Slot />
+        <Slot />
     </AuthProvider>
   );
 }

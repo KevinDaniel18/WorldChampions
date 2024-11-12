@@ -2,142 +2,35 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/components/Auth/AuthContext";
-import { Link, useRouter } from "expo-router";
+import React from "react";
+import { Link } from "expo-router";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
-import {
-  GoogleSignin,
-  GoogleSigninButton,
-} from "@react-native-google-signin/google-signin";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-interface FormDataProps {
-  userName: string;
-  email: string;
-  password: string;
-  authMethod: string;
-}
-
-interface ErrorProps {
-  userName?: string;
-  email?: string;
-  password?: string;
-  authMethod?: string;
-}
+import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
+import { useRegisterForm } from "@/hooks/Form/useRegisterForm";
+import { commonStyles } from "@/constants/styles";
 
 const RegisterScreen = () => {
-  const [formData, setFormData] = useState<FormDataProps>({
-    userName: "",
-    email: "",
-    password: "",
-    authMethod: "local",
-  });
-  const [errorMsg, setErrorMsg] = useState<ErrorProps>({});
-  const [showPassword, setShowPassword] = useState(false);
-  const { onRegister, isLoading } = useAuth();
-
-  const router = useRouter();
-
-  if (!onRegister) {
-    console.error("onRegister no está definido en el contexto.");
-  }
-
-  function handleInput(name: keyof FormDataProps, value: string) {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errorMsg[name]) {
-      setErrorMsg((prev) => ({ ...prev, [name]: "" }));
-    }
-  }
-
-  function validateInputs() {
-    let isValid = true;
-    const errors: ErrorProps = {};
-
-    if (formData.email.trim() === "") {
-      errors.email = "El correo electrónico es requerido";
-      isValid = false;
-    }
-
-    if (formData.password.trim() === "" && formData.authMethod === "local") {
-      errors.password = "La contraseña es requerida";
-      isValid = false;
-    }
-
-    setErrorMsg(errors);
-    return isValid;
-  }
-
-  async function register() {
-    if (validateInputs()) {
-      const res = await onRegister!(
-        formData.userName,
-        formData.email,
-        formData.authMethod === "google" ? null : formData.password,
-        formData.authMethod
-      );
-      if (res && res.error) {
-        alert(res.msg);
-      }
-    }
-  }
-
-  async function googleSignIn() {
-    console.log("pressed sign in");
-    try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      const { email, name } = userInfo.data?.user || {};
-
-      if (!email || !name) {
-        console.error("No se encontró un email en la respuesta de Google");
-        return;
-      }
-
-      if (onRegister) {
-        const res = await onRegister(name, email, null, "google");
-        if (res && res.error) {
-          alert(res.msg);
-          googleLogout();
-        } else if (res && res.userId) {
-          googleLogout();
-          router.replace({
-            pathname: "/verify2FA",
-            params: { userId: res.userId },
-          });
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  function configureGoogleSignIn() {
-    GoogleSignin.configure({
-      webClientId: process.env.EXPO_ANDROID_CLIENT_ID,
-    });
-  }
-
-  useEffect(() => {
-    configureGoogleSignIn();
-  }, []);
-
-  function googleLogout() {
-    GoogleSignin.revokeAccess();
-    GoogleSignin.signOut();
-  }
-
+  const {
+    formData,
+    setFormData,
+    errorMsg,
+    showPassword,
+    setShowPassword,
+    isLoading,
+    handleInput,
+    register,
+    googleSignIn,
+  } = useRegisterForm();
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={commonStyles.container}
     >
       <View style={styles.overlay}>
         <View style={styles.logoContainer}>
@@ -163,12 +56,28 @@ const RegisterScreen = () => {
           <View style={styles.line} />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.labelInput}>
+        <View style={commonStyles.inputContainer}>
+          <Text style={commonStyles.labelInput}>
+            Nombre completo {""} <Text style={{ color: "yellow" }}>*</Text>
+          </Text>
+
+          <TextInput
+            style={commonStyles.input}
+            placeholder="Fulano Mengano"
+            placeholderTextColor="#A0A0A0"
+            value={formData.userName}
+            onChangeText={(text) => handleInput("userName", text)}
+            accessibilityLabel="Ingrese su nombre completo"
+          />
+          {errorMsg.userName ? (
+            <Text style={styles.errorText}>{errorMsg.userName}</Text>
+          ) : null}
+
+          <Text style={commonStyles.labelInput}>
             Correo {""} <Text style={{ color: "yellow" }}>*</Text>
           </Text>
           <TextInput
-            style={styles.input}
+            style={commonStyles.input}
             placeholder="hola@ejemplo.com"
             placeholderTextColor="#A0A0A0"
             value={formData.email}
@@ -181,12 +90,12 @@ const RegisterScreen = () => {
             <Text style={styles.errorText}>{errorMsg.email}</Text>
           ) : null}
 
-          <Text style={styles.labelInput}>
+          <Text style={commonStyles.labelInput}>
             Contraseña{""} <Text style={{ color: "yellow" }}>*</Text>
           </Text>
-          <View style={styles.passwordContainer}>
+          <View style={commonStyles.passwordContainer}>
             <TextInput
-              style={[styles.input, styles.passwordInput]}
+              style={[commonStyles.input, commonStyles.passwordInput]}
               placeholder="Tu contraseña"
               placeholderTextColor="#A0A0A0"
               value={formData.password}
@@ -195,7 +104,7 @@ const RegisterScreen = () => {
               accessibilityLabel="Ingrese su contraseña"
             />
             <TouchableOpacity
-              style={styles.eyeIcon}
+              style={commonStyles.eyeIcon}
               onPress={() => setShowPassword(!showPassword)}
               accessibilityLabel={
                 showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
@@ -203,7 +112,7 @@ const RegisterScreen = () => {
             >
               <FontAwesome6
                 name={showPassword ? "eye-slash" : "eye"}
-                size={24}
+                size={16}
                 color="#A0A0A0"
               />
             </TouchableOpacity>
@@ -214,7 +123,10 @@ const RegisterScreen = () => {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, isLoading && styles.disabledButton]}
+          style={[
+            commonStyles.button,
+            isLoading && commonStyles.disabledButton,
+          ]}
           onPress={() => {
             setFormData((prev) => ({ ...prev, authMethod: "local" }));
             register();
@@ -225,7 +137,7 @@ const RegisterScreen = () => {
           {isLoading ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <Text style={styles.buttonText}>Crear</Text>
+            <Text style={commonStyles.buttonText}>Crear</Text>
           )}
         </TouchableOpacity>
 
@@ -243,10 +155,6 @@ const RegisterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0A0A0A",
-  },
   overlay: {
     padding: 20,
     borderRadius: 10,
@@ -262,47 +170,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "white",
     marginTop: 10,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  labelInput: {
-    color: "white",
-    marginBottom: 10,
-  },
-  input: {
-    padding: 15,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
-    fontSize: 16,
-    color: "white",
-    marginBottom: 10,
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  passwordInput: {
-    flex: 1,
-  },
-  eyeIcon: {
-    position: "absolute",
-    right: 15,
-  },
-  button: {
-    backgroundColor: "#FFD700",
-    padding: 15,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
   },
   forgotPassword: {
     color: "white",
