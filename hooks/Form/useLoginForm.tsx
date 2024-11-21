@@ -80,7 +80,7 @@ export function useLoginForm() {
         const res = await onLogin(email, null, "google");
         if (res && res.error) {
           if (res.statusCode === 400 && res.userId) {
-            router.replace({
+            router.navigate({
               pathname: "/verify2FA",
               params: { userId: res.userId },
             });
@@ -114,11 +114,10 @@ export function useLoginForm() {
               pathname: "/verify2FA",
               params: { userId: res.userId },
             });
-          } else {
-            showToast(res.msg);
           }
+          showToast(res.msg);
         } else {
-          router.replace("/");
+          router.navigate("/");
         }
       }
     }
@@ -148,6 +147,6 @@ export function useLoginForm() {
     isLoading,
     handleInput,
     login,
-    googleSignIn
+    googleSignIn,
   };
 }

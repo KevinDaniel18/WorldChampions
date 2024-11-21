@@ -5,6 +5,7 @@ export const commonStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0A0A0A",
   },
+  letterColor: { color: "white" },
   inputContainer: {
     marginBottom: 20,
   },

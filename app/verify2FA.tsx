@@ -76,10 +76,14 @@ const Verify2FAScreen = () => {
       if (res && res.error) {
         alert(res.msg);
       } else {
-        router.replace("/sign-in");
+        router.navigate("/sign-in");
       }
     }
   }
+
+  const navigateToLogin = () => {
+    router.navigate("/sign-in");
+  };
 
   return (
     <KeyboardAvoidingView
@@ -121,12 +125,12 @@ const Verify2FAScreen = () => {
           )}
         </TouchableOpacity>
 
-        <Link
-          href="/sign-up"
+        <Text
+          onPress={navigateToLogin}
           style={{ alignSelf: "center", color: "white", marginTop: 20 }}
         >
           Volver
-        </Link>
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );

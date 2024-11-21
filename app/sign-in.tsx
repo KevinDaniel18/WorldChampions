@@ -11,6 +11,7 @@ import {
 import React from "react";
 import { useRouter } from "expo-router";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
 import { useLoginForm } from "@/hooks/Form/useLoginForm";
 
@@ -42,7 +43,7 @@ const LoginScreen = () => {
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>
             World Champi
-            <FontAwesome6 name="crown" size={30} color="#FFD700" />
+            <AntDesign name="star" size={30} color="#FFD700" />
             ns
           </Text>
         </View>

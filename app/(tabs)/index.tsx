@@ -1,4 +1,4 @@
-import { Text, View, BackHandler, Alert } from "react-native";
+import { Text, View, BackHandler, Alert, Button } from "react-native";
 import { useAuth } from "@/hooks/Auth/AuthContext";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useEffect } from "react";
@@ -7,9 +7,13 @@ export default function Index() {
   const { onLogout } = useAuth();
 
   async function logout() {
-    await onLogout!();
-    GoogleSignin.revokeAccess();
-    GoogleSignin.signOut();
+    try {
+      await onLogout!();
+      await GoogleSignin.revokeAccess();
+      await GoogleSignin.signOut();
+    } catch (error) {
+      console.error("Error during logout: ", error);
+    }
   }
 
   function configureGoogleSignIn() {
@@ -45,10 +49,18 @@ export default function Index() {
       BackHandler.removeEventListener("hardwareBackPress", backAction);
     };
   }, []);
-
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text onPress={logout}>Sign Out</Text>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "black",
+      }}
+    >
+      <Text onPress={logout} style={{ color: "white" }}>
+        Aqui se mostrará las publicaciones de los usuarios
+      </Text>
     </View>
   );
 }
